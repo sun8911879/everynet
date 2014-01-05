@@ -1,5 +1,4 @@
 # everynet 网络加速器(你懂的)
-========
 golang编写 socks5 和 http,https代理
 
 golang都有gob通信.可以过gfw
