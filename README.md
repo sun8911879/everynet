@@ -1,7 +1,7 @@
 # everynet 网络加速器
 golang编写 SOCKS5 和 http,https代理
 
-golang自有gob通信.
+golang自有 gob编码通信.
 
 并发编程.多TCP同时连接服务端(支持浏览器TCP复用).速度是SSH等几倍
 
