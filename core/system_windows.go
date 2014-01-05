@@ -49,7 +49,7 @@ func Minimize() error {
 	})
 	// 标题设置
 	titleAction := walk.NewAction()
-	if err := titleAction.SetText("万象加速器1.0"); err != nil {
+	if err := titleAction.SetText("everynet加速器1.0"); err != nil {
 		return err
 	}
 	//添加按钮事件
