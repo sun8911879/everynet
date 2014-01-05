@@ -1,4 +1,4 @@
-# everynet 网络加速器(你懂的)
+# everynet 网络加速器
 golang编写 SOCKS5 和 http,https代理
 
 golang自有gob通信.
