@@ -1,4 +1,4 @@
-# everynet 网络加速器
+# everynet 代理服务器
 golang编写 SOCKS5 和 http,https代理
 
 golang自有 gob编码通信.
@@ -39,6 +39,8 @@ windows下或许有少许bug.基本使用无问题
 
 ##注释
 由于初期时间紧.代码略烂.请见谅(此项目不保证更新)
+
+开源协议: GNU General Public Licence v3
 
 ##安装
 安装方法：
