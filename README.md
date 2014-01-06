@@ -29,13 +29,15 @@ windows下 HTTP,HTTPS代理
 
 windows下或许有少许bug.基本使用无问题
 
-1.目前不完善.HTTP POST数据请求body部分.只能写完(具体效果看浏览器-有时候抽风会等待)
-
-2.注册表改后无法实时刷新IE更改到代理.打算用cgo-wininet-InternetSetOption来实现刷新.目前没搞定求大神
+1.注册表改后无法实时刷新IE更改到代理.打算用cgo-wininet-InternetSetOption来实现刷新.目前没搞定求大神
 
 ## 交流
 
 新浪微博：[雪虎](http://weibo.com/sun8911879)
+
+## 交流
+
+更新日志：[日志](https://github.com/sun8911879/everynet/blob/master/UPDATE.md)
 
 ##注释
 由于初期时间紧.代码略烂.请见谅(此项目不保证更新)

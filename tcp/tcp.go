@@ -63,7 +63,7 @@ func Copy(dst Writer, src Reader) (n int, err error) {
 }
 
 //POST拷贝
-func PostCopy(dst Writer, src Reader) (n int, err error) {
+func PostCopy(dst Writer, src Reader, length int) (n int, err error) {
 	alloc := memory.Alloc(uintptr(32 * 1024))
 	buf := (*[1 << 30]byte)(unsafe.Pointer(alloc))[:32*1024]
 	for {
@@ -81,6 +81,9 @@ func PostCopy(dst Writer, src Reader) (n int, err error) {
 				err = ErrShortWrite
 				break
 			}
+		}
+		if n >= length {
+			break
 		}
 		if er == EOF {
 			break
@@ -127,7 +130,6 @@ func WinCopy(dst WinWriter, src WinReader) (n int, err error) {
 		}
 	}
 	src.Close()
-	dst.Close()
 	memory.Free(alloc, uintptr(32*1024))
 	alloc = nil
 	buf = nil

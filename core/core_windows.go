@@ -51,6 +51,7 @@ type Request struct {
 	Addr   string        //tcp远程地址
 	Cache  string        //缓存
 	Key    string        //key--判断是否需要代理
+	Length int           //Body长度
 	chanl  bool          //判断通道是否已经打开
 	err    error         //错误类型
 	Remote net.Conn      //远端TCP请求
@@ -172,14 +173,18 @@ func (Tcp *Request) Headr() {
 			break
 		}
 		//获取域名
-		index := strings.Index(line, "Host:")
-		if index == 0 && len(line) > 8 {
+		Host := strings.Index(line, "Host:")
+		if Host == 0 && len(line) > 8 {
 			//判断域名--是否需要更改(判断是否被广告替换掉)
 			if Tcp.Host != "" {
 				line = "Host: " + Tcp.Host + "\r\n"
 			} else {
 				Tcp.Host = line[6 : len(line)-2]
 			}
+		}
+		//Content-Length
+		if strings.Index(line, "Content-Length:") != -1 {
+			Tcp.Length, _ = strconv.Atoi(line[16 : len(line)-2])
 		}
 		//更改代理标识符
 		if strings.Index(line, "Proxy-Connection:") != -1 {
@@ -219,7 +224,11 @@ func (Tcp *Request) Ship() {
 	Tcp.Remote.Write([]byte(Tcp.Cache))
 	//如果POST 写入数据
 	if Tcp.Pact == "POST" {
-		tcp.PostCopy(Tcp.Remote, Tcp.bufio)
+		if Tcp.Length == 0 {
+			Tcp.err = errors.New("POST Length Too Short")
+			return
+		}
+		tcp.PostCopy(Tcp.Remote, Tcp.bufio, Tcp.Length)
 	}
 	Tcp.Cache = ""
 	//读取数据--判断通道是否已经开启
