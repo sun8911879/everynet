@@ -35,7 +35,7 @@ windows下或许有少许bug.基本使用无问题
 
 新浪微博：[雪虎](http://weibo.com/sun8911879)
 
-## 交流
+## 更新日志
 
 更新日志：[日志](https://github.com/sun8911879/everynet/blob/master/UPDATE.md)
 
