@@ -1,7 +1,7 @@
 # everynet 更新日志
 
 ##2014.1.10
-1.修复TCP复用问题(除chrome外 有些TCP连接一直等待)
+1.修复TCP复用问题(除chrome外 有些浏览器TCP连接一直等待)
 
 2.修复Internet Settings 不实时问题
 
