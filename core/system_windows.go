@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/lxn/walk"
+	"github.com/sun8911879/everynet/tools/internet"
 	"os/exec"
 )
 
@@ -24,7 +25,7 @@ func Minimize() error {
 		return err
 	}
 	//鼠标放上信息
-	if err := ni.SetToolTip("everynet加速器,点击设置或退出."); err != nil {
+	if err := ni.SetToolTip("everynet网络加速器,点击设置或退出."); err != nil {
 		return err
 	}
 	ni.MouseDown().Attach(func(x, y int, button walk.MouseButton) {
@@ -41,19 +42,31 @@ func Minimize() error {
 	})
 	// 菜单目录设置
 	exitAction := walk.NewAction()
-	if err := exitAction.SetText("退出加速器"); err != nil {
+	if err := exitAction.SetText("退出程序"); err != nil {
 		return err
 	}
 	exitAction.Triggered().Attach(func() {
 		walk.App().Exit(0)
 	})
+	// 菜单目录设置
+	settingAction := walk.NewAction()
+	if err := settingAction.SetText("设置中心"); err != nil {
+		return err
+	}
+	settingAction.Triggered().Attach(func() {
+		explorer := exec.Command(`explorer`, `http://setup.com`)
+		explorer.Output()
+	})
 	// 标题设置
 	titleAction := walk.NewAction()
-	if err := titleAction.SetText("everynet加速器1.0"); err != nil {
+	if err := titleAction.SetText("everynet1.0"); err != nil {
 		return err
 	}
 	//添加按钮事件
 	if err := ni.ContextMenu().Actions().Add(titleAction); err != nil {
+		return err
+	}
+	if err := ni.ContextMenu().Actions().Add(settingAction); err != nil {
 		return err
 	}
 	if err := ni.ContextMenu().Actions().Add(exitAction); err != nil {
@@ -64,7 +77,7 @@ func Minimize() error {
 		return err
 	}
 	// 默认显示
-	if err := ni.ShowInfo("everynet已经启动", "右键图标进行网络加速设置"); err != nil {
+	if err := ni.ShowInfo("加速器已经启动", "右键图标进行网络加速设置"); err != nil {
 		return err
 	}
 	// 开始运行
@@ -79,10 +92,12 @@ func Net_On() {
 	networksetup_reg_add.Output()
 	networksetup_reg_on := exec.Command(`reg`, `add`, `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings`, `/v`, `ProxyEnable`, `/t`, `REG_DWORD`, `/d`, `1`, `/f`)
 	networksetup_reg_on.Output()
+	internet.InternetSet()
 }
 
 //设置系统网络代理--关闭
 func Net_Off() {
 	networksetup_reg_on := exec.Command(`reg`, `add`, `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings`, `/v`, `ProxyEnable`, `/t`, `REG_DWORD`, `/d`, `0`, `/f`)
 	networksetup_reg_on.Output()
+	internet.InternetSet()
 }

@@ -3,7 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/sun8911879/everynet/tcp"
+	"github.com/sun8911879/everynet/tools/tcp"
 	"net"
 	"os"
 	"regexp"

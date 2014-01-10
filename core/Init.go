@@ -71,7 +71,7 @@ func gfwlist() error {
 	defer resp.Body.Close()
 	buffio := bufio.NewReader(resp.Body) //读入缓存
 	for {
-		line, err := buffio.ReadString('\n')
+		line, err := buffio.ReadString('\n') //以'\n'为结束符读入一行
 		if err != nil {
 			break
 		}
@@ -126,7 +126,7 @@ func info() error {
 		return errors.New("Get server_info error!")
 	}
 	buffio := bufio.NewReader(resp.Body) //读入缓存
-	line, err := buffio.ReadString('\n')
+	line, err := buffio.ReadString('\n') //以'\n'为结束符读入一行
 	if err != nil {
 		return errors.New("Get server_info error!")
 	}

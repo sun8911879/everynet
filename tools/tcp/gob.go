@@ -2,7 +2,7 @@ package tcp
 
 import (
 	"encoding/gob"
-	"github.com/sun8911879/everynet/memory"
+	"github.com/sun8911879/everynet/tools/memory"
 	"unsafe"
 )
 

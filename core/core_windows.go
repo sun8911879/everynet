@@ -5,7 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"github.com/sun8911879/everynet/tcp"
+	"github.com/sun8911879/everynet/tools/tcp"
 	"net"
 	"os"
 	"regexp"
@@ -50,14 +50,16 @@ type Request struct {
 	Pact   string        //协议 GET POST HTTPS
 	Port   string        //端口
 	Addr   string        //tcp远程地址
-	Cache  string        //缓存
+	Head   string        //HTTP头协议
 	Key    string        //key--判断是否需要代理
-	Length int           //Body长度
-	chanl  bool          //判断通道是否已经打开
+	Length int           //Body长度--POST提交
 	err    error         //错误类型
+	line   string        //分析保存的字符串
+	alloc  int           //POST申请内存大小
 	Remote net.Conn      //远端TCP请求
 	Accept net.Conn      //本地TCP请求
-	bufio  *bufio.Reader //读取缓存bufio
+	src    *bufio.Reader //本地读取缓存bufio
+	dst    *bufio.Reader //远程读取缓存bufio
 	enc    *gob.Encoder  //gob对象
 }
 
@@ -81,67 +83,75 @@ func Listen() {
 
 //进行服务
 func (Tcp *Request) Serve() {
-	//defer Tcp.Accept.Close()
-	Tcp.bufio = bufio.NewReader(Tcp.Accept) //读入缓存
-	//判断协议
-	line, err := Tcp.bufio.ReadString('\n')
-	pact_index := strings.Index(line, " ")
-	if err != nil || pact_index < 3 {
-		return
-	}
-	//协议
-	Tcp.Pact = line[:pact_index]
-	//获取路径
-	path_index := strings.Index(line, HTTP)
-	if path_index == -1 || pact_index >= path_index {
-		return
-	}
-	//路径
-	Tcp.Path = line[pact_index+1 : path_index]
+	//关闭连接
+	defer func() {
+		Tcp.Accept.Close()
+		if Tcp.Remote != nil {
+			Tcp.Remote.Close()
+		}
+	}()
+	Tcp.src = bufio.NewReader(Tcp.Accept) //读入缓存
+	Tcp.Initial()
 	//区分处理数据流
 	switch Tcp.Pact {
 	case CONNECT:
 		Tcp.HTTPS()
 		break
 	default:
-		Tcp.Cache = line
 		Tcp.HTTP()
 		break
 	}
 }
 
+func (Tcp *Request) Initial() {
+	//判断协议
+	Tcp.line, Tcp.err = Tcp.src.ReadString('\n')
+	pact_index := strings.Index(Tcp.line, " ")
+	if Tcp.err != nil {
+		return
+	}
+	if pact_index < 3 && len(Tcp.line) <= 2 {
+		Tcp.Initial()
+		return
+	}
+	if pact_index == -1 {
+		Tcp.err = errors.New("Initial Read Error")
+		return
+	}
+	//协议
+	Tcp.Pact = Tcp.line[:pact_index]
+	//获取路径
+	path_index := strings.Index(Tcp.line, HTTP)
+	if path_index == -1 || pact_index >= path_index {
+		return
+	}
+	//路径
+	Tcp.Path = Tcp.line[pact_index+1 : path_index]
+	Tcp.Head = Tcp.line
+}
+
 //HTTP协议处理
 func (Tcp *Request) HTTP() {
-	//关闭连接
-	defer func() {
-		if Tcp.Remote != nil {
-			Tcp.Remote.Close()
-		}
-	}()
+	if Tcp.err != nil {
+		return
+	}
+
 	for {
-		if Tcp.chanl {
-			line, err := Tcp.bufio.ReadString('\n')
-			pact_index := strings.Index(line, " ")
-			if err != nil || pact_index < 3 {
-				return
-			}
-			//协议
-			Tcp.Pact = line[:pact_index]
-			//获取路径
-			path_index := strings.Index(line, HTTP)
-			if path_index == -1 || pact_index >= path_index {
-				return
-			}
-			//路径
-			Tcp.Path = line[pact_index+1 : path_index]
-			Tcp.Cache = line
+		if Tcp.Host != "" {
+			Tcp.Initial()
 		}
 		if Tcp.err != nil {
 			return
 		}
 		Tcp.Headr()
+		if Tcp.err != nil {
+			return
+		}
 		Tcp.Wall()
 		Tcp.Ship()
+		if Tcp.err != nil {
+			return
+		}
 	}
 }
 
@@ -161,37 +171,36 @@ func (Tcp *Request) Headr() {
 		Tcp.GET = Tcp.GET[GET_Index:]
 	}
 	//替换源地址
-	Tcp.Cache = strings.Replace(Tcp.Cache, Tcp.Path, Tcp.GET, 1)
+	Tcp.Head = strings.Replace(Tcp.Head, Tcp.Path, Tcp.GET, 1)
 	//判断域名进行申请
 	for {
-		line, err := Tcp.bufio.ReadString('\n')
-		if err != nil {
-			Tcp.err = err
+		Tcp.line, Tcp.err = Tcp.src.ReadString('\n')
+		if Tcp.err != nil {
 			break
 		}
-		if len(line) <= 2 {
-			Tcp.Cache = Tcp.Cache + line
+		if len(Tcp.line) <= 2 {
+			Tcp.Head = Tcp.Head + Tcp.line
 			break
 		}
 		//获取域名
-		Host := strings.Index(line, "Host:")
-		if Host == 0 && len(line) > 8 {
+		Host := strings.Index(Tcp.line, "Host:")
+		if Host == 0 && len(Tcp.line) > 8 {
 			//判断域名--是否需要更改(判断是否被广告替换掉)
 			if Tcp.Host != "" {
-				line = "Host: " + Tcp.Host + "\r\n"
+				Tcp.line = "Host: " + Tcp.Host + "\r\n"
 			} else {
-				Tcp.Host = line[6 : len(line)-2]
+				Tcp.Host = Tcp.line[6 : len(Tcp.line)-2]
 			}
 		}
 		//Content-Length
-		if strings.Index(line, "Content-Length:") != -1 {
-			Tcp.Length, _ = strconv.Atoi(line[16 : len(line)-2])
+		if strings.Index(Tcp.line, "Content-Length:") != -1 {
+			Tcp.Length, _ = strconv.Atoi(Tcp.line[16 : len(Tcp.line)-2])
 		}
 		//更改代理标识符
-		if strings.Index(line, "Proxy-Connection:") != -1 {
-			line = strings.Replace(line, "Proxy-Connection", "Connection", 1)
+		if strings.Index(Tcp.line, "Proxy-Connection:") != -1 {
+			Tcp.line = strings.Replace(Tcp.line, "Proxy-Connection", "Connection", 1)
 		}
-		Tcp.Cache = Tcp.Cache + line
+		Tcp.Head = Tcp.Head + Tcp.line
 	}
 	//判断端口
 	port_index := strings.LastIndex(Tcp.Host, ":")
@@ -199,10 +208,9 @@ func (Tcp *Request) Headr() {
 		Tcp.Port = Tcp.Host[port_index+1:]
 	}
 	//判断通道地址是否一样.不一样关闭远程连接.重置
-	if Tcp.chanl == true && Tcp.Addr != Tcp.Host+":"+Tcp.Port {
+	if Tcp.Remote != nil && Tcp.Addr != Tcp.Host+":"+Tcp.Port {
 		Tcp.Remote.Close()
 		Tcp.Remote = nil
-		Tcp.chanl = false
 	}
 	Tcp.Addr = Tcp.Host + ":" + Tcp.Port
 }
@@ -215,40 +223,34 @@ func (Tcp *Request) Ship() {
 		return
 	}
 	//建立连接
-	if Tcp.chanl == false {
+	if Tcp.Remote == nil {
 		Tcp.Remote, Tcp.err = net.Dial("tcp", Tcp.Addr)
-		if Tcp.err != nil {
-			return
-		}
+		//读取数据
+		go Tcp.WinCopy()
+	}
+
+	if Tcp.err != nil {
+		return
 	}
 	//写入数据
-	Tcp.Remote.Write([]byte(Tcp.Cache))
+	Tcp.Remote.Write([]byte(Tcp.Head))
 	//如果POST 写入数据
 	if Tcp.Pact == "POST" {
-		if Tcp.Length == 0 {
-			Tcp.err = errors.New("POST Length Too Short")
-			return
-		}
-		tcp.PostCopy(Tcp.Remote, Tcp.bufio, Tcp.Length)
+		Tcp.PostCopy()
 	}
-	Tcp.Cache = ""
-	//读取数据--判断通道是否已经开启
-	if Tcp.chanl == false {
-		go tcp.WinCopy(Tcp.Accept, Tcp.Remote)
-		Tcp.chanl = true
-	}
+	Tcp.Head = ""
 }
 
 //HTTPS协议处理
 func (Tcp *Request) HTTPS() {
 	//去掉无用信息
 	for {
-		line, err := Tcp.bufio.ReadString('\n')
-		if len(line) <= 2 {
-			break
-		}
-		if err != nil {
+		Tcp.line, Tcp.err = Tcp.src.ReadString('\n')
+		if Tcp.err != nil {
 			return
+		}
+		if len(Tcp.line) <= 2 {
+			break
 		}
 	}
 	//设置地址
@@ -279,7 +281,7 @@ func (Tcp *Request) Ships() {
 	}
 	defer Tcp.Remote.Close()
 	//写入数据
-	go tcp.Copy(Tcp.Remote, Tcp.bufio)
+	go tcp.Copy(Tcp.Remote, Tcp.src)
 	//读取数据
 	tcp.Copy(Tcp.Accept, Tcp.Remote)
 }

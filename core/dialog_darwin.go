@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/sun8911879/everynet/tcp"
+	"github.com/sun8911879/everynet/tools/tcp"
 	"net"
 )
 

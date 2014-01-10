@@ -5,6 +5,7 @@ import (
 	"syscall"
 )
 
+//open http://setup.com
 //设置osx系统--开启
 func Net_On() {
 	//文件句柄
