@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/sun8911879/everynet/tcp"
 	"fmt"
+	"github.com/sun8911879/everynet/tools/tcp"
 	"net"
 )
 
