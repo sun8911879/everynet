@@ -27,9 +27,6 @@ windows下 HTTP,HTTPS代理
 
 后期可以屏蔽广告联盟js等广告
 
-windows下或许有少许bug.基本使用无问题
-
-1.注册表改后无法实时刷新IE更改到代理.打算用cgo-wininet-InternetSetOption来实现刷新.目前没搞定求大神
 
 ## 交流
 
