@@ -59,7 +59,7 @@ func (Tcp *Request) GobWriter() error {
 	err := Tcp.enc.Encode([]byte(Tcp.Head))
 	//如果POST 写入数据
 	if Tcp.Pact == "POST" {
-		Tcp.PostCopy()
+		Tcp.GobPostCopy()
 	}
 	return err
 }
